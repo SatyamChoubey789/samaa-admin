@@ -69,6 +69,7 @@ export function useUpdateProduct() {
   })
 }
 
+
 export function useDeleteProduct() {
   const queryClient = useQueryClient()
 
@@ -84,6 +85,7 @@ export function useDeleteProduct() {
   })
 }
 
+
 // Orders
 export function useOrders() {
   return useQuery({
@@ -96,6 +98,7 @@ export function useOrders() {
   })
 }
 
+
 export function useOrder(id: string) {
   return useQuery({
     queryKey: ["order", id],
@@ -107,6 +110,7 @@ export function useOrder(id: string) {
   })
 }
 
+
 // Users
 export function useUsers() {
   return useQuery({
@@ -117,6 +121,7 @@ export function useUsers() {
     },
   })
 }
+
 
 export function useUser(id: string) {
   return useQuery({
@@ -166,7 +171,7 @@ export function useStories() {
     queryKey: ["stories"],
     queryFn: async () => {
       const response = await api.get("/api/v1/stories")
-      return response.data.data;
+      return response.data;
     },
   })
 }
