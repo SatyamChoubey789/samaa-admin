@@ -8,7 +8,7 @@ export function useDashboardStats() {
   return useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
-      const response = await api.get("/admin")
+      const response = await api.get("/api/v1/admin")
       return response.data.data;
     },
   })
