@@ -9,7 +9,7 @@ export function useDashboardStats() {
     queryKey: ["dashboard-stats"],
     queryFn: async () => {
       const response = await api.get("/admin")
-      return response.data
+      return response.data.data;
     },
   })
 }
