@@ -91,7 +91,7 @@ export function useOrders() {
     queryFn: async () => {
       
       const response = await api.get("/api/v1/orders/")
-      return response.data.data;
+      return response.data;
     },
   })
 }
