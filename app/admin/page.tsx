@@ -88,7 +88,7 @@ export default function AdminDashboard() {
             <CardDescription>Total revenue and growth metrics</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">${defaultStats.totalRevenue?.toLocaleString() || "0"}</div>
+            <div className="text-3xl font-bold">₹{defaultStats.totalRevenue?.toLocaleString() || "0"}</div>
             <div className="flex items-center mt-2">
               <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
               <span className="text-sm text-green-600 font-medium">+20.1% from last month</span>
@@ -110,7 +110,7 @@ export default function AdminDashboard() {
                       <p className="text-sm font-medium">Order #{order.id}</p>
                       <p className="text-xs text-muted-foreground">{order.customer}</p>
                     </div>
-                    <div className="text-sm font-medium">${order.total}</div>
+                    <div className="text-sm font-medium">₹{order.total}</div>
                   </div>
                 ))
               ) : (
