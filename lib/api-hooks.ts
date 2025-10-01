@@ -17,7 +17,7 @@ export function useDashboardStats() {
 // Products - Fixed to use consistent query keys and endpoints
 export function useProducts() {
   return useQuery({
-    queryKey: ["products"], // Changed from "candles" to match other hooks
+    queryKey: ["products"],
     queryFn: async () => {
       const response = await api.get("/api/v1/candles") 
       return response.data
@@ -29,7 +29,6 @@ export function useProduct(id: string) {
   return useQuery({
     queryKey: ["product", id],
     queryFn: async () => {
-      // Use ID-based endpoint for admin operations
       const response = await api.get(`/api/v1/candles/${id}`)
       return response.data
     },
@@ -37,7 +36,7 @@ export function useProduct(id: string) {
   })
 }
 
-// Product Mutations - Fixed to use correct endpoints and query invalidation
+// Product Mutations
 export function useCreateProduct() {
   const queryClient = useQueryClient()
 
@@ -69,7 +68,6 @@ export function useUpdateProduct() {
   })
 }
 
-
 export function useDeleteProduct() {
   const queryClient = useQueryClient()
 
@@ -79,37 +77,95 @@ export function useDeleteProduct() {
       return response.data
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] }) // Fixed query key
+      queryClient.invalidateQueries({ queryKey: ["products"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] })
     },
   })
 }
-
 
 // Orders
 export function useOrders() {
   return useQuery({
     queryKey: ["orders"],
     queryFn: async () => {
-      
       const response = await api.get("/api/v1/orders/")
-      return response.data;
+      
+      // Transform backend data to match frontend interface
+      return response.data.data.map((order: any) => ({
+        id: order.id,
+        orderNumber: `ORD-${order.id.toString().padStart(6, '0')}`,
+        customerName: order.name,
+        customerEmail: order.email,
+        total: parseFloat(order.total),
+        status: order.status,
+        createdAt: order.created_at,
+        items: order.items || [],
+        shippingStatus: order.shipping_status,
+        refundStatus: order.refund_status,
+        paymentId: order.payment_id
+      }))
     },
   })
 }
-
 
 export function useOrder(id: string) {
   return useQuery({
     queryKey: ["order", id],
     queryFn: async () => {
-      const response = await api.get(`/admin/orders/${id}`)
-      return response.data
+      const response = await api.get(`/api/v1/orders/${id}`)
+      const order = response.data.data
+      
+      // Transform single order
+      return {
+        id: order.id,
+        orderNumber: `ORD-${order.id.toString().padStart(6, '0')}`,
+        customerName: order.name,
+        customerEmail: order.email,
+        total: parseFloat(order.total),
+        status: order.status,
+        createdAt: order.created_at,
+        items: order.items || [],
+        shippingStatus: order.shipping_status,
+        refundStatus: order.refund_status,
+        paymentId: order.payment_id,
+        phone: order.phone,
+        address: order.address
+      }
     },
     enabled: !!id,
   })
 }
 
+export function useUpdateOrderStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const response = await api.put(`/api/v1/orders/${id}/status`, { status })
+      return response.data
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] })
+      queryClient.invalidateQueries({ queryKey: ["order", id] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] })
+    },
+  })
+}
+
+export function useCancelOrder() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await api.post("/api/v1/orders/cancel", { orderId })
+      return response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] })
+    },
+  })
+}
 
 // Users
 export function useUsers() {
@@ -121,7 +177,6 @@ export function useUsers() {
     },
   })
 }
-
 
 export function useUser(id: string) {
   return useQuery({
