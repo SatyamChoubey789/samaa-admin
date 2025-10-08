@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { LayoutDashboard, Package, ShoppingCart, Users, FileText, LogOut, Menu } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingCart, Users, FileText, LogOut, Menu, } from "lucide-react"
 import { useState } from "react"
 
 const navigation = [
@@ -34,6 +34,11 @@ const navigation = [
     name: "Stories",
     href: "/admin/stories",
     icon: FileText,
+  },
+  {
+    name: "Subscribers",
+    href: "/admin/subscribers",
+    icon: Users,
   },
 ]
 
