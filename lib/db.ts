@@ -20,7 +20,7 @@ export type Product = {
 export type Story = {
   id: string
   title: string
-  content: any // TipTap JSON
+  content: any 
   updatedAt: string
 }
 
