@@ -47,7 +47,7 @@ export const db = {
       id: "u_admin",
       name: "SAMAA Admin",
       email: "admin@samaa.co",
-      passwordHash: "admin@1975", // plaintext for demo only
+      passwordHash: "admin@1975",
       role: "admin",
     },
   ] as User[],
