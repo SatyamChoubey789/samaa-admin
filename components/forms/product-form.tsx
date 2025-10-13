@@ -82,7 +82,7 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
       let method = "POST"
       
       if (initial?.id) {
-        url = `https://api.samaabysiblings.com/backend/api/api/v1/candles/update/${initial.id}`
+        url = `https://api.samaabysiblings.com/backend/api/v1/candles/update/${initial.id}`
         method = "PUT"
       }
 
