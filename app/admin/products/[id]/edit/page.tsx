@@ -4,28 +4,28 @@ import { ProductForm } from "@/components/forms/product-form"
 async function getProduct(id: string) {
   try {
     const res = await fetch(
-      `https://api.samaabysiblings.com/backend/api/v1/candles/${id}`, 
-      { 
+      `https://api.samaabysiblings.com/backend/api/v1/candles/${id}`,
+      {
         cache: "no-store",
         headers: {
           'Content-Type': 'application/json',
         }
       }
     )
-    
+   
     if (!res.ok) {
       console.error(`Failed to fetch product: ${res.status}`)
       return null
     }
-    
+   
     const result = await res.json()
-    
+   
     // The API returns { success: true, data: {...}, message: "..." }
     if (!result.success || !result.data) {
       console.error('Invalid API response:', result)
       return null
     }
-    
+   
     return result.data
   } catch (error) {
     console.error('Error fetching product:', error)
@@ -33,13 +33,15 @@ async function getProduct(id: string) {
   }
 }
 
-export default async function EditProductPage({ 
-  params 
-}: { 
-  params: { id: string } 
+export default async function EditProductPage({
+  params
+}: {
+  params: Promise<{ id: string }> // FIXED: Changed to Promise
 }) {
-  const product = await getProduct(params.id)
-  
+  // FIXED: Await params
+  const { id } = await params
+  const product = await getProduct(id)
+ 
   if (!product || !product.id) {
     return notFound()
   }
