@@ -1,11 +1,23 @@
 import { notFound } from "next/navigation"
 
 async function getOrder(id: string) {
-  const res = await fetch(`https://api.samaabysiblings.com/backend/api/v1/orders/${id}`, {
-    cache: "no-store",
-  })
-  if (!res.ok) return null
-  return res.json()
+  try {
+    const res = await fetch(`https://api.samaabysiblings.com/backend/api/v1/orders/${id}`, {
+      cache: "no-store",
+    })
+    
+    if (!res.ok) {
+      if (res.status === 404) return null
+      throw new Error(`Failed to fetch order: ${res.status}`)
+    }
+    
+    const response = await res.json()
+    // Handle both direct order response and wrapped response
+    return response.data || response
+  } catch (error) {
+    console.error('Error fetching order:', error)
+    return null
+  }
 }
 
 export default async function OrderPage({ params }: { params: { id: string } }) {
@@ -26,7 +38,10 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       shipped: "bg-purple-100 text-purple-800",
       delivered: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
-      refunded: "bg-gray-100 text-gray-800"
+      refunded: "bg-gray-100 text-gray-800",
+      paid: "bg-green-100 text-green-800",
+      failed: "bg-red-100 text-red-800",
+      not_shipped: "bg-gray-100 text-gray-800"
     }
     return colors[status?.toLowerCase()] || "bg-gray-100 text-gray-800"
   }
@@ -56,26 +71,26 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="glass rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
           <div className="text-sm text-gray-600 mb-1">Order Status</div>
           <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(order.status)}`}>
             {order.status || "Unknown"}
           </span>
         </div>
-        <div className="glass rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
           <div className="text-sm text-gray-600 mb-1">Shipping Status</div>
           <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(order.shipping_status)}`}>
-            {order.shipping_status || "Not Shipped"}
+            {order.shipping_status?.replace('_', ' ') || "Not Shipped"}
           </span>
         </div>
-        <div className="glass rounded-lg p-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
           <div className="text-sm text-gray-600 mb-1">Payment Method</div>
           <div className="font-medium capitalize">{order.payment_method || "N/A"}</div>
         </div>
       </div>
 
       {/* Customer Information */}
-      <div className="glass rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
         <h2 className="text-xl font-semibold mb-4">Customer Information</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -101,11 +116,17 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
             <div className="font-medium whitespace-pre-line">{order.address}</div>
           </div>
         )}
+        {order.customer_notes && (
+          <div className="mt-4">
+            <div className="text-sm text-gray-600">Customer Notes</div>
+            <div className="font-medium whitespace-pre-line">{order.customer_notes}</div>
+          </div>
+        )}
       </div>
 
       {/* Order Items */}
       {order.items && order.items.length > 0 && (
-        <div className="glass rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">Order Items</h2>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -147,7 +168,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
       {/* Shipping Information */}
       {(order.courier_company || order.awb_code || order.estimated_delivery) && (
-        <div className="glass rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">Shipping Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {order.courier_company && (
@@ -180,6 +201,34 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
                 <div className="font-medium">{order.shiprocket_order_id}</div>
               </div>
             )}
+            {order.shipped_at && (
+              <div>
+                <div className="text-sm text-gray-600">Shipped At</div>
+                <div className="font-medium">
+                  {new Date(order.shipped_at).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+            )}
+            {order.delivered_at && (
+              <div>
+                <div className="text-sm text-gray-600">Delivered At</div>
+                <div className="font-medium">
+                  {new Date(order.delivered_at).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-3 mt-4">
             {order.invoice_url && (
@@ -208,7 +257,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
       {/* Payment Information */}
       {order.payment_id && (
-        <div className="glass rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">Payment Information</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -219,10 +268,37 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
               <div className="text-sm text-gray-600">Payment Method</div>
               <div className="font-medium capitalize">{order.payment_method || "N/A"}</div>
             </div>
-            {order.refund_status && (
+            {order.refund_status && order.refund_status !== 'not_refunded' && (
               <div>
                 <div className="text-sm text-gray-600">Refund Status</div>
-                <div className="font-medium capitalize">{order.refund_status}</div>
+                <div className="font-medium capitalize">{order.refund_status.replace('_', ' ')}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cancellation Information */}
+      {order.cancelled_at && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4 text-red-800">Cancellation Details</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="text-sm text-red-600">Cancelled At</div>
+              <div className="font-medium">
+                {new Date(order.cancelled_at).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </div>
+            </div>
+            {order.cancellation_reason && (
+              <div>
+                <div className="text-sm text-red-600">Reason</div>
+                <div className="font-medium">{order.cancellation_reason}</div>
               </div>
             )}
           </div>
@@ -231,7 +307,7 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
 
       {/* Timeline */}
       {order.timeline && order.timeline.length > 0 && (
-        <div className="glass rounded-lg p-6">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">Order Timeline</h2>
           <ol className="relative border-s border-gray-300 pl-6">
             {order.timeline.map((t: any, index: number) => (
@@ -254,8 +330,8 @@ export default async function OrderPage({ params }: { params: { id: string } }) 
       )}
 
       {/* Admin Notes */}
-      {order.admin_notes && (
-        <div className="glass rounded-lg p-6">
+      {order.admin_notes && order.admin_notes.trim() && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
           <h2 className="text-xl font-semibold mb-4">Admin Notes</h2>
           <p className="text-gray-700 whitespace-pre-line">{order.admin_notes}</p>
         </div>
