@@ -20,7 +20,6 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 function downloadExcel(orders: any[], filename = "orders.xlsx") {
   if (orders.length === 0) return;
 
-  // Prepare worksheet data similar to CSV headers and rows
   const wsData = [
     [
       "ID",
@@ -75,12 +74,9 @@ function downloadExcel(orders: any[], filename = "orders.xlsx") {
     }),
   ];
 
-  // Create worksheet and workbook
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Orders");
-
-  // Write workbook and save file
   const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   const blob = new Blob([wbout], { type: "application/octet-stream" });
   saveAs(blob, filename);
@@ -178,44 +174,28 @@ function StatusBadge({ status }: { status: string }) {
   }
 
   return (
-    <span
-      className={`px-2 py-1 rounded text-xs font-semibold ${bgColor} whitespace-nowrap`}
-    >
+    <span className={`px-2 py-1 rounded text-xs font-semibold ${bgColor} whitespace-nowrap`}>
       {status}
     </span>
   );
 }
 
 export default function OrdersPage() {
-  const { data, error, isLoading } = useSWR(
-    "https://api.samaabysiblings.com/backend/api/v1/orders",
-    fetcher
-  );
-  const orders = data?.items ?? [];
-
   const [page, setPage] = useState(1);
   const pageSize = 10;
-
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredOrders = useMemo(() => {
-    if (!searchTerm.trim()) return orders;
-    return orders.filter((order: any) => {
-      const term = searchTerm.toLowerCase();
-      return (
-        order.name?.toLowerCase().includes(term) ||
-        order.email?.toLowerCase().includes(term) ||
-        String(order.id).includes(term)
-      );
-    });
-  }, [orders, searchTerm]);
-
-  const totalPages = Math.ceil(filteredOrders.length / pageSize);
-  const paginatedOrders = filteredOrders.slice(
-    (page - 1) * pageSize,
-    page * pageSize
+  const { data, error, isLoading } = useSWR(
+    `https://api.samaabysiblings.com/backend/api/v1/orders?page=${page}&limit=${pageSize}&search=${encodeURIComponent(
+      searchTerm
+    )}`,
+    fetcher
   );
-  const csvData = useMemo(() => convertToCSV(filteredOrders), [filteredOrders]);
+
+  const orders = data?.data?.items || [];
+  const pagination = data?.data?.pagination || { page: 1, totalPages: 1 };
+
+  const csvData = useMemo(() => convertToCSV(orders), [orders]);
 
   return (
     <div className="grid gap-4 p-4">
@@ -245,7 +225,7 @@ export default function OrdersPage() {
         </Button>
 
         <Button
-          onClick={() => downloadExcel(filteredOrders)}
+          onClick={() => downloadExcel(orders)}
           className="bg-green-600 hover:bg-green-700 text-white"
           size="sm"
         >
@@ -273,7 +253,7 @@ export default function OrdersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedOrders.map((order: any) => {
+            {orders.map((order: any) => {
               const items = Array.isArray(order.items)
                 ? order.items
                 : (() => {
@@ -284,8 +264,7 @@ export default function OrdersPage() {
                     }
                   })();
 
-              const address =
-                order.address || order.address_object?.street || "-";
+              const address = order.address || order.address_object?.street || "-";
 
               const payment = (() => {
                 try {
@@ -293,9 +272,7 @@ export default function OrdersPage() {
                     typeof order.payment_details === "string"
                       ? JSON.parse(order.payment_details)
                       : order.payment_details;
-                  return (
-                    p?.method?.toUpperCase() || order.payment_method || "-"
-                  );
+                  return p?.method?.toUpperCase() || order.payment_method || "-";
                 } catch {
                   return order.payment_method || "-";
                 }
@@ -341,12 +318,9 @@ export default function OrdersPage() {
                 </TableRow>
               );
             })}
-            {paginatedOrders.length === 0 && (
+            {orders.length === 0 && (
               <TableRow>
-                <TableCell
-                  colSpan={13}
-                  className="text-center text-muted-foreground"
-                >
+                <TableCell colSpan={13} className="text-center text-muted-foreground">
                   No orders found.
                 </TableCell>
               </TableRow>
@@ -366,14 +340,14 @@ export default function OrdersPage() {
         </Button>
 
         <span>
-          Page {page} of {totalPages}
+          Page {page} of {pagination.totalPages}
         </span>
 
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-          disabled={page === totalPages}
+          onClick={() => setPage((p) => Math.min(p + 1, pagination.totalPages))}
+          disabled={page === pagination.totalPages}
         >
           Next
         </Button>
