@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useState, useEffect } from "react"
@@ -21,7 +22,9 @@ const schema = z.object({
   scent: z.string().min(1),
   description: z.string().min(1),
   mood: z.string().min(1),
-  stock: z.coerce.number().min(0).optional(),
+  stock: z.coerce.number().min(0),
+  in_stock: z.boolean(),  // Manual override
+  low_stock_threshold: z.coerce.number().min(0).optional(),
   taglines: z.array(z.string().min(1)).optional(),
   images: z.array(z.string().url()).optional(),
   notes: z.array(z.string().min(1)).optional(),
@@ -53,12 +56,28 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
       description: initial?.description || "",
       mood: initial?.mood || "",
       stock: initial?.stock ?? 100,
+      in_stock: initial?.in_stock ?? true,
+      low_stock_threshold: initial?.low_stock_threshold ?? 10,
       taglines,
       images,
       notes,
       features,
     },
   })
+
+  
+  
+
+  // Watch stock value to auto-update in_stock
+  const stockValue = form.watch("stock")
+  const inStockValue = form.watch("in_stock")
+
+
+  useEffect(() => {
+    if (stockValue === 0) {
+      form.setValue("in_stock", false)
+    }
+  }, [stockValue, form])
 
   useEffect(() => {
     form.setValue("taglines", taglines.filter(t => t.trim() !== ""))
@@ -168,10 +187,7 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
   )
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit)}
-      className="grid gap-4 glass p-4 rounded-lg"
-    >
+   <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 glass p-4 rounded-lg">
       <div className="grid gap-2">
         <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
         <Input id="name" {...form.register("name")} className="focus-ring" />
@@ -198,7 +214,7 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="price">Price <span className="text-red-500">*</span></Label>
+        <Label htmlFor="price">Price (₹) <span className="text-red-500">*</span></Label>
         <Input
           id="price"
           type="number"
@@ -228,6 +244,152 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
         )}
       </div>
 
+      {/* ENHANCED STOCK MANAGEMENT SECTION */}
+      <div className="border-t pt-4 mt-4">
+        <h3 className="text-lg font-semibold mb-4">Stock Management</h3>
+        
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="stock">
+              Current Stock <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="stock"
+              type="number"
+              {...form.register("stock")}
+              className="focus-ring"
+              placeholder="100"
+            />
+            {form.formState.errors.stock && (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.stock.message}
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="low_stock_threshold">
+              Low Stock Alert Threshold
+            </Label>
+            <Input
+              id="low_stock_threshold"
+              type="number"
+              {...form.register("low_stock_threshold")}
+              className="focus-ring"
+              placeholder="10"
+            />
+          </div>
+        </div>
+
+        {/* MANUAL IN_STOCK TOGGLE */}
+        <div className="mt-4 p-4 border rounded-lg bg-gray-50">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="in_stock" className="text-base font-semibold">
+                Availability Status
+              </Label>
+              <p className="text-sm text-gray-500">
+                Manual override to hide item even if stock &gt; 0
+              </p>
+            </div>
+            <Switch
+              id="in_stock"
+              checked={inStockValue}
+              onCheckedChange={(checked) => form.setValue("in_stock", checked)}
+            />
+          </div>
+
+          {/* Current Status Display */}
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-sm font-medium">Current Status:</span>
+            {inStockValue ? (
+              <span className="text-green-600 flex items-center gap-1 text-sm">
+                <span className="w-2 h-2 bg-green-600 rounded-full"></span>
+                Available to Customers
+              </span>
+            ) : (
+              <span className="text-red-600 flex items-center gap-1 text-sm">
+                <span className="w-2 h-2 bg-red-600 rounded-full"></span>
+                Hidden from Customers
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* QUICK STOCK ACTIONS */}
+        <div className="mt-4 p-4 border rounded-lg">
+          <h4 className="font-semibold mb-3">Quick Actions</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                form.setValue("stock", 0)
+                form.setValue("in_stock", false)
+              }}
+            >
+              Mark Out of Stock
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const current = form.getValues("stock")
+                form.setValue("stock", current + 50)
+                form.setValue("in_stock", true)
+              }}
+            >
+              +50 Units
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                form.setValue("stock", 100)
+                form.setValue("in_stock", true)
+              }}
+            >
+              Reset to 100
+            </Button>
+          </div>
+        </div>
+
+        {/* STATUS ALERTS */}
+        {stockValue > 0 && !inStockValue && (
+          <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
+            <p className="text-sm text-orange-800 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              Note: Item has stock ({stockValue} units) but is hidden from customers
+            </p>
+          </div>
+        )}
+
+        {stockValue <= (form.watch("low_stock_threshold") || 10) && stockValue > 0 && inStockValue && (
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              Warning: Stock is running low! Only {stockValue} units left.
+            </p>
+          </div>
+        )}
+
+        {stockValue === 0 && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-800 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              Item is out of stock and hidden from customers
+            </p>
+          </div>
+        )}
+      </div>
+
+
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -244,7 +406,7 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
           id="category"
           {...form.register("category")}
           className="focus-ring"
-          placeholder="e.g., soft, bold"
+          placeholder="e.g., soft, sharp"
         />
         {form.formState.errors.category && (
           <p className="text-sm text-destructive">
@@ -295,22 +457,6 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
         {form.formState.errors.mood && (
           <p className="text-sm text-destructive">
             {form.formState.errors.mood.message}
-          </p>
-        )}
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="stock">Stock</Label>
-        <Input
-          id="stock"
-          type="number"
-          {...form.register("stock")}
-          className="focus-ring"
-          placeholder="100"
-        />
-        {form.formState.errors.stock && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.stock.message}
           </p>
         )}
       </div>
