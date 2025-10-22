@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Refresh token function
   const refreshAccessToken = async (): Promise<string | null> => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/refresh`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Fetch current user
   const fetchCurrentUser = async (token: string) => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
+      const res = await fetch(`${API_URL}/api/v1/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [accessToken, pathname])
 
   const login = async (email: string, password: string) => {
-    const res = await fetch(`${API_URL}/api/auth/login`, {
+    const res = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signup = async (name: string, email: string, password: string) => {
-    const res = await fetch(`${API_URL}/api/auth/signup`, {
+    const res = await fetch(`${API_URL}/api/v1/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -177,7 +177,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch(`${API_URL}/api/auth/logout`, {
+      await fetch(`${API_URL}/api/v1/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       })

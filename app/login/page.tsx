@@ -49,7 +49,7 @@ export default function LoginPage() {
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_URL}/api/auth/google`
+    window.location.href = `${API_URL}/api/v1/auth/google`
   }
 
   return (

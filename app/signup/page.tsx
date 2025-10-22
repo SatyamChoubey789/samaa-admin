@@ -61,7 +61,7 @@ export default function SignupPage() {
   }
 
   const handleGoogleSignup = () => {
-    window.location.href = `${API_URL}/api/auth/google`
+    window.location.href = `${API_URL}/api/v1/auth/google`
   }
 
   return (

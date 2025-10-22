@@ -14,7 +14,7 @@ export default function UsersPage() {
     return await api.get<UserListResponse>(url)
   }
 
-  const { data, error, isLoading } = useSWR<UserListResponse>('/api/users', fetcher)
+  const { data, error, isLoading } = useSWR<UserListResponse>('/api/v1/users', fetcher)
   const users: User[] = data?.items ?? []
 
   if (error) {

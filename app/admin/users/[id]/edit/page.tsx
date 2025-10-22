@@ -18,7 +18,7 @@ export default function EditUserPage() {
     return await api.get<User>(url)
   }
 
-  const { data: user, error, isLoading } = useSWR<User>(`/api/users/${id}`, fetcher)
+  const { data: user, error, isLoading } = useSWR<User>(`/api/v1/users/${id}`, fetcher)
 
   const handleRoleChange = async (newRole: string) => {
     try {
