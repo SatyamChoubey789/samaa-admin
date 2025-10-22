@@ -22,7 +22,7 @@ export default function EditUserPage() {
 
   const handleRoleChange = async (newRole: string) => {
     try {
-      await api.put(`/api/users/${id}`, { role: newRole })
+      await api.put(`/api/v1/users/${id}`, { role: newRole })
 
       toast({ 
         title: "Success", 
@@ -30,8 +30,8 @@ export default function EditUserPage() {
       })
       
       // Revalidate data
-      mutate(`/api/users/${id}`)
-      mutate(`/api/users`)
+      mutate(`/api/v1/users/${id}`)
+      mutate(`/api/v1/users`)
     } catch (err: any) {
       toast({ 
         title: "Error", 
