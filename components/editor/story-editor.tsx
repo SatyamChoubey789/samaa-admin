@@ -26,7 +26,6 @@ import TableCell from "@tiptap/extension-table-cell"
 import TableHeader from "@tiptap/extension-table-header"
 import { createLowlight, common } from "lowlight"
 import * as LucideIcons from "lucide-react"
-import { motion } from "framer-motion"
 
 const API_BASE = "https://api.samaabysiblings.com/backend/api/v1"
 

@@ -35,7 +35,6 @@ const NAV_ITEMS = [
   { href: "/admin/users", label: "Users", icon: Users, adminOnly: true },
   { href: "/admin/stories", label: "Stories", icon: BookOpen },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
 ];
 
