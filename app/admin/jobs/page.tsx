@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useSWR from "swr";
 import { Plus, Edit, Trash2, Eye, EyeOff, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/lib/auth-provider";
 
 interface Job {
   id: number;
@@ -46,6 +48,10 @@ interface Job {
   created_by_name?: string;
 }
 
+interface JobsResponse {
+  data: Job[];
+}
+
 interface JobFormData {
   title: string;
   department: string;
@@ -59,11 +65,8 @@ interface JobFormData {
   is_active: boolean;
 }
 
-const API_URL = "https://api.samaabysiblings.com/backend/api/v1/jobs";
-
 export default function AdminJobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { api } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [formData, setFormData] = useState<JobFormData>({
@@ -79,23 +82,16 @@ export default function AdminJobsPage() {
     is_active: true,
   });
 
-  useEffect(() => {
-    fetchJobs();
-  }, []);
-
-  const fetchJobs = async () => {
-    try {
-      const response = await fetch(`${API_URL}/admin/all`, {
-        credentials: "include",
-      });
-      const data = await response.json();
-      setJobs(data.data || []);
-    } catch (error) {
-      console.error("Error fetching jobs:", error);
-    } finally {
-      setLoading(false);
-    }
+  const fetcher = async (url: string): Promise<JobsResponse> => {
+    return await api.get<JobsResponse>(url);
   };
+
+  const { data, error, isLoading, mutate } = useSWR<JobsResponse>(
+    "/api/v1/jobs/admin/all",
+    fetcher
+  );
+
+  const jobs: Job[] = data?.data ?? [];
 
   const handleSubmit = async () => {
     if (!formData.title || !formData.description) {
@@ -105,31 +101,21 @@ export default function AdminJobsPage() {
 
     try {
       const url = editingJob
-        ? `${API_URL}/${editingJob.id}`
-        : API_URL;
-      
-      const method = editingJob ? "PUT" : "POST";
+        ? `/api/v1/jobs/${editingJob.id}`
+        : "/api/v1/jobs";
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        await fetchJobs();
-        setDialogOpen(false);
-        resetForm();
+      if (editingJob) {
+        await api.put(url, formData);
       } else {
-        const error = await response.json();
-        alert(error.message || "Failed to save job");
+        await api.post(url, formData);
       }
-    } catch (error) {
+
+      await mutate();
+      setDialogOpen(false);
+      resetForm();
+    } catch (error: any) {
       console.error("Error saving job:", error);
-      alert("Failed to save job");
+      alert(error.message || "Failed to save job");
     }
   };
 
@@ -137,43 +123,23 @@ export default function AdminJobsPage() {
     if (!confirm("Are you sure you want to delete this job?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        await fetchJobs();
-      } else {
-        alert("Failed to delete job");
-      }
-    } catch (error) {
+      await api.delete(`/api/v1/jobs/${id}`);
+      await mutate();
+    } catch (error: any) {
       console.error("Error deleting job:", error);
-      alert("Failed to delete job");
+      alert(error.message || "Failed to delete job");
     }
   };
 
   const toggleActive = async (job: Job) => {
     try {
-      const response = await fetch(`${API_URL}/${job.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          is_active: !job.is_active,
-        }),
+      await api.put(`/api/v1/jobs/${job.id}`, {
+        is_active: !job.is_active,
       });
-
-      if (response.ok) {
-        await fetchJobs();
-      } else {
-        alert("Failed to update job status");
-      }
-    } catch (error) {
+      await mutate();
+    } catch (error: any) {
       console.error("Error toggling job status:", error);
-      alert("Failed to update job status");
+      alert(error.message || "Failed to update job status");
     }
   };
 
@@ -214,10 +180,41 @@ export default function AdminJobsPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  if (loading) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Job Postings</h1>
+          <p className="text-muted-foreground">
+            Manage job openings and career opportunities
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-red-500 font-medium mb-2">Failed to load jobs</p>
+            <p className="text-sm text-muted-foreground">
+              {error.message || "Please make sure you have admin access"}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Job Postings</h1>
+          <p className="text-muted-foreground">
+            Manage job openings and career opportunities
+          </p>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
