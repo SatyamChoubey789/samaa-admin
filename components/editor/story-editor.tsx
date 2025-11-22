@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/lib/auth-provider"
 import { EditorContent, useEditor } from "@tiptap/react"
 import { BubbleMenu } from "@tiptap/react/menus"
 import StarterKit from "@tiptap/starter-kit"
@@ -27,8 +29,6 @@ import TableHeader from "@tiptap/extension-table-header"
 import { createLowlight, common } from "lowlight"
 import * as LucideIcons from "lucide-react"
 
-const API_BASE = "https://api.samaabysiblings.com/backend/api/v1"
-
 export function StoryEditor({
   storyId,
   initial,
@@ -37,6 +37,7 @@ export function StoryEditor({
   initial?: any
 }) {
   const { toast } = useToast()
+  const { api } = useAuth()
   const router = useRouter()
   const [saving, setSaving] = useState(false)
   const [title, setTitle] = useState(initial?.title || "")
@@ -47,15 +48,17 @@ export function StoryEditor({
   const [published, setPublished] = useState(initial?.published || false)
   const [ctaText, setCtaText] = useState(initial?.cta_text || "It's your turn to twist it →")
   const [ctaLink, setCtaLink] = useState(initial?.cta_link || "https://substack.com/@samaacircle")
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // New: Meta Description (SEO)
+  const [metaDescription, setMetaDescription] = useState(initial?.excerpt || initial?.meta_description || "")
+  const metaDescriptionMaxLength = 160
 
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
   const lowlight = createLowlight(common)
 
-  // Parse initial content if needed
   const getInitialContent = () => {
     if (!initial?.content) return "<p>Start writing your story...</p>"
     
-    // If content is a string, parse it
     if (typeof initial.content === "string") {
       try {
         return JSON.parse(initial.content)
@@ -65,7 +68,6 @@ export function StoryEditor({
       }
     }
     
-    // If it's already an object, return it
     return initial.content
   }
 
@@ -106,7 +108,6 @@ export function StoryEditor({
     }
   }, [])
 
-  // Auto-generate slug from title
   const generateSlug = (text: string) => {
     return text
       .toLowerCase()
@@ -153,24 +154,19 @@ export function StoryEditor({
         image_url: imageUrl.trim() || null,
         cta_text: ctaText.trim() || null,
         cta_link: ctaLink.trim() || null,
+        excerpt: metaDescription.trim() || null, // Using excerpt column for meta description
         published,
       }
 
       const isNewStory = storyId.startsWith("s_")
       const url = isNewStory
-        ? `${API_BASE}/stories`
-        : `${API_BASE}/stories/${storyId}`
+        ? `/api/v1/stories`
+        : `/api/v1/stories/${storyId}`
 
-      const res = await fetch(url, {
-        method: isNewStory ? "POST" : "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to save story")
+      if (isNewStory) {
+        await api.post(url, payload)
+      } else {
+        await api.put(url, payload)
       }
 
       toast({
@@ -179,7 +175,7 @@ export function StoryEditor({
       })
 
       if (isNewStory) {
-        router.push(`/admin/stories/${data.data.id}/edit`)
+        router.push(`/admin/stories`)
       }
     } catch (error: any) {
       toast({
@@ -212,6 +208,8 @@ export function StoryEditor({
     <div className="grid gap-4">
       {/* Metadata Section */}
       <div className="glass rounded-lg p-4 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-700">Story Details</h3>
+        
         <div className="grid gap-2">
           <Label htmlFor="title">Title *</Label>
           <Input
@@ -230,6 +228,9 @@ export function StoryEditor({
             onChange={(e) => setSlug(e.target.value)}
             placeholder="url-friendly-slug"
           />
+          <p className="text-xs text-gray-500">
+            Will appear as: /stories/{slug || "your-slug"}
+          </p>
         </div>
 
         <div className="grid gap-2">
@@ -272,6 +273,52 @@ export function StoryEditor({
         </div>
       </div>
 
+      {/* SEO Section - NEW */}
+      <div className="glass rounded-lg p-4 space-y-4 bg-blue-50/50">
+        <div className="flex items-center gap-2">
+          <LucideIcons.Search className="h-4 w-4 text-blue-600" />
+          <h3 className="text-sm font-semibold text-gray-700">SEO & Social Sharing</h3>
+        </div>
+        
+        <div className="grid gap-2">
+          <Label htmlFor="meta_description">
+            Meta Description *
+            <span className="text-xs text-gray-500 ml-2">
+              ({metaDescription.length}/{metaDescriptionMaxLength} characters)
+            </span>
+          </Label>
+          <Textarea
+            id="meta_description"
+            value={metaDescription}
+            onChange={(e) => setMetaDescription(e.target.value.slice(0, metaDescriptionMaxLength))}
+            placeholder="A brief, compelling summary of your story (150-160 characters recommended)"
+            rows={3}
+            maxLength={metaDescriptionMaxLength}
+          />
+          <p className="text-xs text-gray-500">
+            This appears in search results and when shared on social media. Keep it engaging and under 160 characters.
+          </p>
+        </div>
+
+        {/* Preview */}
+        {metaDescription && (
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <p className="text-xs text-gray-500 mb-2">Search Result Preview:</p>
+            <div className="bg-white p-3 rounded border border-gray-200">
+              <div className="text-blue-600 text-sm font-medium mb-1">
+                {title || "Your Story Title"}
+              </div>
+              <div className="text-xs text-green-700 mb-1">
+                samaabysiblings.com › stories › {slug || "your-slug"}
+              </div>
+              <div className="text-xs text-gray-600 line-clamp-2">
+                {metaDescription}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* CTA Section */}
       <div className="glass rounded-lg p-4 space-y-4">
         <h3 className="text-sm font-semibold text-gray-700">Call to Action (CTA)</h3>
@@ -284,9 +331,6 @@ export function StoryEditor({
             onChange={(e) => setCtaText(e.target.value)}
             placeholder="It's your turn to twist it →"
           />
-          <p className="text-xs text-gray-500">
-            The text shown at the end of the story
-          </p>
         </div>
 
         <div className="grid gap-2">
@@ -297,12 +341,8 @@ export function StoryEditor({
             onChange={(e) => setCtaLink(e.target.value)}
             placeholder="https://substack.com/@samaacircle"
           />
-          <p className="text-xs text-gray-500">
-            Where the CTA link should go (use full URL with https://)
-          </p>
         </div>
 
-        {/* Preview */}
         {ctaText && ctaLink && (
           <div className="mt-4 pt-4 border-t">
             <p className="text-xs text-gray-500 mb-2">Preview:</p>
