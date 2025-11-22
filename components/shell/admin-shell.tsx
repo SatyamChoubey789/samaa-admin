@@ -12,11 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-provider";
 import { useState } from "react";
-import { 
-  Menu, 
-  Sun, 
-  Moon, 
-  LogOut, 
+import {
+  Menu,
+  Sun,
+  Moon,
+  LogOut,
   User,
   LayoutDashboard,
   Package,
@@ -24,7 +24,8 @@ import {
   Users,
   BookOpen,
   Mail,
-  Settings
+  Settings,
+  Briefcase,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -35,6 +36,7 @@ const NAV_ITEMS = [
   { href: "/admin/stories", label: "Stories", icon: BookOpen },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
   { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -47,14 +49,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
   // Filter nav items based on user role
-  const visibleNavItems = NAV_ITEMS.filter(item => {
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
     if (item.adminOnly) {
-      return user?.role === 'admin';
+      return user?.role === "admin";
     }
     return true;
   });
@@ -71,14 +73,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </Badge>
         )}
       </div>
-      
+
       <Separator className="my-4" />
-      
+
       <nav className="grid gap-1 flex-1">
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
-          
+
           return (
             <Link
               key={item.href}
@@ -131,12 +133,18 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex md:grid md:grid-cols-[16rem_1fr]">
       {/* Desktop Sidebar */}
-      <div className="hidden md:block md:h-screen md:sticky md:top-0">{Sidebar}</div>
+      <div className="hidden md:block md:h-screen md:sticky md:top-0">
+        {Sidebar}
+      </div>
 
       {/* Mobile Menu */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild className="md:hidden">
-          <Button variant="ghost" size="icon" className="fixed top-4 left-4 z-50">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="fixed top-4 left-4 z-50"
+          >
             <Menu className="h-5 w-5" />
             <span className="sr-only">Open menu</span>
           </Button>
@@ -161,9 +169,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <span className="text-sm text-muted-foreground hidden sm:inline">
                 Welcome back,
               </span>
-              <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">{user?.name}</span>
-              {(Boolean((user as any)?.email_verified) || Boolean((user as any)?.emailVerified)) && (
-                <Badge variant="outline" className="text-xs hidden sm:inline-flex">
+              <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">
+                {user?.name}
+              </span>
+              {(Boolean((user as any)?.email_verified) ||
+                Boolean((user as any)?.emailVerified)) && (
+                <Badge
+                  variant="outline"
+                  className="text-xs hidden sm:inline-flex"
+                >
                   ✓ Verified
                 </Badge>
               )}
@@ -189,11 +203,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </Button>
 
               {/* Logout Button */}
-              <Button 
-                size="sm" 
-                onClick={handleLogout}
-                className="gap-2"
-              >
+              <Button size="sm" onClick={handleLogout} className="gap-2">
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Sign out</span>
               </Button>
