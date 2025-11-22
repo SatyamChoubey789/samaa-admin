@@ -85,7 +85,9 @@ export default function AdminJobsPage() {
 
   const fetchJobs = async () => {
     try {
-      const response = await fetch(`${API_URL}/admin/all`);
+      const response = await fetch(`${API_URL}/admin/all`, {
+        credentials: "include",
+      });
       const data = await response.json();
       setJobs(data.data || []);
     } catch (error) {
