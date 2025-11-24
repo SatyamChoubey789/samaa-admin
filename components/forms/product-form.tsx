@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { useState, useEffect } from "react"
+import { Search } from "lucide-react"
 
 const schema = z.object({
   id: z.number().optional(),
@@ -21,9 +23,10 @@ const schema = z.object({
   category: z.string().min(1),
   scent: z.string().min(1),
   description: z.string().min(1),
+  meta_description: z.string().max(160).optional().or(z.literal("")), // NEW: SEO meta description
   mood: z.string().min(1),
   stock: z.coerce.number().min(0),
-  in_stock: z.boolean(),  // Manual override
+  in_stock: z.boolean(),
   low_stock_threshold: z.coerce.number().min(0).optional(),
   taglines: z.array(z.string().min(1)).optional(),
   images: z.array(z.string().url()).optional(),
@@ -41,6 +44,7 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
   const [images, setImages] = useState<string[]>(initial?.images || [""])
   const [notes, setNotes] = useState<string[]>(initial?.notes || [""])
   const [features, setFeatures] = useState<string[]>(initial?.features || [""])
+  const [metaDescription, setMetaDescription] = useState(initial?.meta_description || "")
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -54,6 +58,7 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
       category: initial?.category || "",
       scent: initial?.scent || "",
       description: initial?.description || "",
+      meta_description: initial?.meta_description || "",
       mood: initial?.mood || "",
       stock: initial?.stock ?? 100,
       in_stock: initial?.in_stock ?? true,
@@ -65,13 +70,8 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
     },
   })
 
-  
-  
-
-  // Watch stock value to auto-update in_stock
   const stockValue = form.watch("stock")
   const inStockValue = form.watch("in_stock")
-
 
   useEffect(() => {
     if (stockValue === 0) {
@@ -94,6 +94,10 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
   useEffect(() => {
     form.setValue("features", features.filter(f => f.trim() !== ""))
   }, [features, form])
+
+  useEffect(() => {
+    form.setValue("meta_description", metaDescription)
+  }, [metaDescription, form])
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -244,7 +248,70 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
         )}
       </div>
 
-      {/* ENHANCED STOCK MANAGEMENT SECTION */}
+      <div className="grid gap-2">
+        <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
+        <Textarea
+          id="description"
+          {...form.register("description")}
+          className="focus-ring min-h-[100px]"
+          rows={4}
+          placeholder="Detailed product description..."
+        />
+        {form.formState.errors.description && (
+          <p className="text-sm text-destructive">
+            {form.formState.errors.description.message}
+          </p>
+        )}
+      </div>
+
+      {/* NEW: SEO Section */}
+      <div className="border-t pt-4 mt-4 bg-blue-50/50 -mx-4 px-4 pb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Search className="h-4 w-4 text-blue-600" />
+          <h3 className="text-lg font-semibold">SEO & Search Engine Optimization</h3>
+        </div>
+        
+        <div className="grid gap-2">
+          <Label htmlFor="meta_description">
+            Meta Description (for Google & Social Media)
+            <span className="text-xs text-gray-500 ml-2">
+              ({metaDescription.length}/160 characters)
+            </span>
+          </Label>
+          <Textarea
+            id="meta_description"
+            value={metaDescription}
+            onChange={(e) => setMetaDescription(e.target.value.slice(0, 160))}
+            placeholder="A brief, compelling description that appears in search results (150-160 characters recommended)"
+            rows={3}
+            maxLength={160}
+            className="focus-ring"
+          />
+          <p className="text-xs text-gray-500">
+            This appears when people search for your product on Google or share it on social media. Make it engaging!
+          </p>
+        </div>
+
+        {/* Preview */}
+        {metaDescription && (
+          <div className="mt-3 pt-3 border-t border-blue-200">
+            <p className="text-xs text-gray-500 mb-2">Search Result Preview:</p>
+            <div className="bg-white p-3 rounded border border-gray-200">
+              <div className="text-blue-600 text-sm font-medium mb-1">
+                {form.watch("name") || "Your Product Name"} - ₹{form.watch("price") || "0"} | Samaa by Siblings
+              </div>
+              <div className="text-xs text-green-700 mb-1">
+                samaabysiblings.com › candles › {form.watch("slug") || "your-slug"}
+              </div>
+              <div className="text-xs text-gray-600 line-clamp-2">
+                {metaDescription}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* STOCK MANAGEMENT SECTION */}
       <div className="border-t pt-4 mt-4">
         <h3 className="text-lg font-semibold mb-4">Stock Management</h3>
         
@@ -299,7 +366,6 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
             />
           </div>
 
-          {/* Current Status Display */}
           <div className="mt-3 flex items-center gap-2">
             <span className="text-sm font-medium">Current Status:</span>
             {inStockValue ? (
@@ -389,7 +455,6 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
         )}
       </div>
 
-
       <div className="flex items-center gap-2">
         <input
           type="checkbox"
@@ -426,22 +491,6 @@ export function ProductForm({ initial }: { initial?: Partial<FormValues> }) {
         {form.formState.errors.scent && (
           <p className="text-sm text-destructive">
             {form.formState.errors.scent.message}
-          </p>
-        )}
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="description">Description <span className="text-red-500">*</span></Label>
-        <textarea
-          id="description"
-          {...form.register("description")}
-          className="focus-ring rounded-md border bg-background px-3 py-2 min-h-[100px]"
-          rows={4}
-          placeholder="Detailed product description..."
-        />
-        {form.formState.errors.description && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.description.message}
           </p>
         )}
       </div>
