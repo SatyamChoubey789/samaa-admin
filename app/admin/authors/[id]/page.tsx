@@ -60,14 +60,18 @@ export default function AuthorFormPage({
 
   useEffect(() => {
     if (!isNew) {
-      fetchAuthor()
+      fetchAuthors()
     }
   }, [id])
 
-  const fetchAuthor = async () => {
+  const fetchAuthors = async () => {
     try {
-      const response = await api.get<{ data: Author }>(`/api/v1/authors/${id}`)
-      setAuthor(response.data)
+      setLoading(true);
+      const response = (await api.get(`/api/v1/authors/${id}`)) as { data: { data: Author[] } };
+      const authorData = response.data.data?.[0];
+      if (authorData) {
+        setAuthor(authorData);
+      }
     } catch (error: any) {
       toast({
         title: "Error",
@@ -102,7 +106,7 @@ export default function AuthorFormPage({
       }
 
       if (isNew) {
-        await api.post("/api/v1/authors", payload)
+        await api.post("/api/v1/authors/", payload)
         toast({ title: "Success", description: "Author created" })
       } else {
         await api.put(`/api/v1/authors/${id}`, payload)
