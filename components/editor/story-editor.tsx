@@ -1,98 +1,106 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/lib/auth-provider"
-import { EditorContent, useEditor } from "@tiptap/react"
-import { BubbleMenu } from "@tiptap/react/menus"
-import * as LucideIcons from "lucide-react"
-import { getEditorExtensions } from "@/lib/editor-extensions"
-import { EditorToolbar } from "@/components/EditorToolbar"
-import { ExportMenu } from "@/components/ExportMenu"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth-provider";
+import { EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
+import * as LucideIcons from "lucide-react";
+import { getEditorExtensions } from "@/lib/editor-extensions";
+import { EditorToolbar } from "@/components/EditorToolbar";
+import { ExportMenu } from "@/components/ExportMenu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 
 interface Author {
-  id: number
-  name: string
-  slug: string
+  id: number;
+  name: string;
+  slug: string;
 }
 
 export function StoryEditor({
   storyId,
   initial,
 }: {
-  storyId: string
-  initial?: any
+  storyId: string;
+  initial?: any;
 }) {
-  const { toast } = useToast()
-  const { api } = useAuth()
-  const router = useRouter()
-  
-  const [saving, setSaving] = useState(false)
-  const [title, setTitle] = useState(initial?.title || "")
-  const [slug, setSlug] = useState(initial?.slug || "")
-  const [subtitle, setSubtitle] = useState(initial?.subtitle || "")
-  const [imageUrl, setImageUrl] = useState(initial?.image_url || "")
-  const [authorId, setAuthorId] = useState<number | null>(initial?.author_id || null)
-  const [author, setAuthor] = useState(initial?.author || "") // Keep for backward compatibility
-  const [published, setPublished] = useState(initial?.published || false)
-  const [ctaText, setCtaText] = useState(initial?.cta_text || "It's your turn to twist it →")
-  const [ctaLink, setCtaLink] = useState(initial?.cta_link || "https://substack.com/@samaacircle")
-  const [metaDescription, setMetaDescription] = useState(initial?.excerpt || initial?.meta_description || "")
-  
+  const { toast } = useToast();
+  const { api } = useAuth();
+  const router = useRouter();
+
+  const [saving, setSaving] = useState(false);
+  const [title, setTitle] = useState(initial?.title || "");
+  const [slug, setSlug] = useState(initial?.slug || "");
+  const [subtitle, setSubtitle] = useState(initial?.subtitle || "");
+  const [imageUrl, setImageUrl] = useState(initial?.image_url || "");
+  const [authorId, setAuthorId] = useState<number | null>(
+    initial?.author_id || null
+  );
+  const [author, setAuthor] = useState(initial?.author || ""); // Keep for backward compatibility
+  const [published, setPublished] = useState(initial?.published || false);
+  const [ctaText, setCtaText] = useState(
+    initial?.cta_text || "It's your turn to twist it →"
+  );
+  const [ctaLink, setCtaLink] = useState(
+    initial?.cta_link || "https://substack.com/@samaacircle"
+  );
+  const [metaDescription, setMetaDescription] = useState(
+    initial?.excerpt || initial?.meta_description || ""
+  );
+
   // Authors list
-  const [authors, setAuthors] = useState<Author[]>([])
-  const [loadingAuthors, setLoadingAuthors] = useState(true)
-  
-  const metaDescriptionMaxLength = 160
+  const [authors, setAuthors] = useState<Author[]>([]);
+  const [loadingAuthors, setLoadingAuthors] = useState(true);
+
+  const metaDescriptionMaxLength = 160;
 
   // Fetch authors
   useEffect(() => {
-    fetchAuthors()
-  }, [])
+    fetchAuthors();
+  }, []);
 
   const fetchAuthors = async () => {
     try {
-      const response = await api.get("/api/v1/authors") as any
-      setAuthors(response.data.data || [])
+      const response = (await api.get("/api/v1/authors")) as any;
+      setAuthors(response.data || []);
     } catch (error) {
-      console.error("Error fetching authors:", error)
+      console.error("Error fetching authors:", error);
       toast({
         title: "Warning",
         description: "Could not load authors list",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoadingAuthors(false)
+      setLoadingAuthors(false);
     }
-  }
+  };
 
   const getInitialContent = () => {
-    if (!initial?.content) return "<p>Start writing your story...</p>"
-    
+    if (!initial?.content) return "<p>Start writing your story...</p>";
+
     if (typeof initial.content === "string") {
       try {
-        return JSON.parse(initial.content)
+        return JSON.parse(initial.content);
       } catch (e) {
-        console.error("Failed to parse content:", e)
-        return "<p>Start writing your story...</p>"
+        console.error("Failed to parse content:", e);
+        return "<p>Start writing your story...</p>";
       }
     }
-    
-    return initial.content
-  }
+
+    return initial.content;
+  };
 
   const editor = useEditor({
     extensions: getEditorExtensions(),
@@ -101,25 +109,26 @@ export function StoryEditor({
     autofocus: true,
     editorProps: {
       attributes: {
-        class: "prose prose-lg max-w-none prose-gray dark:prose-invert focus:outline-none min-h-[500px] px-4 py-2",
+        class:
+          "prose prose-lg max-w-none prose-gray dark:prose-invert focus:outline-none min-h-[500px] px-4 py-2",
       },
     },
-  })
+  });
 
   const generateSlug = (text: string) => {
     return text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-  }
+      .replace(/^-|-$/g, "");
+  };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value
-    setTitle(newTitle)
+    const newTitle = e.target.value;
+    setTitle(newTitle);
     if (!initial?.slug) {
-      setSlug(generateSlug(newTitle))
+      setSlug(generateSlug(newTitle));
     }
-  }
+  };
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -127,8 +136,8 @@ export function StoryEditor({
         title: "Title required",
         description: "Please enter a title for your story",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (!slug.trim()) {
@@ -136,11 +145,11 @@ export function StoryEditor({
         title: "Slug required",
         description: "Please enter a URL slug",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setSaving(true)
+    setSaving(true);
 
     try {
       const payload = {
@@ -155,42 +164,40 @@ export function StoryEditor({
         cta_link: ctaLink.trim() || null,
         excerpt: metaDescription.trim() || null,
         published,
-      }
+      };
 
-      const isNewStory = storyId.startsWith("s_")
-      const url = isNewStory
-        ? `/api/v1/stories`
-        : `/api/v1/stories/${storyId}`
+      const isNewStory = storyId.startsWith("s_");
+      const url = isNewStory ? `/api/v1/stories` : `/api/v1/stories/${storyId}`;
 
       if (isNewStory) {
-        await api.post(url, payload)
+        await api.post(url, payload);
       } else {
-        await api.put(url, payload)
+        await api.put(url, payload);
       }
 
       toast({
         title: "Success!",
         description: `Story ${isNewStory ? "created" : "updated"} successfully`,
-      })
+      });
 
       if (isNewStory) {
-        router.push(`/admin/stories`)
+        router.push(`/admin/stories`);
       }
     } catch (error: any) {
       toast({
         title: "Save failed",
         description: error.message || "Please try again",
         variant: "destructive",
-      })
+      });
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
-  if (!editor) return null
+  if (!editor) return null;
 
-  const wordCount = editor.storage.characterCount?.words?.() || 0
-  const charCount = editor.storage.characterCount?.characters?.() || 0
+  const wordCount = editor.storage.characterCount?.words?.() || 0;
+  const charCount = editor.storage.characterCount?.characters?.() || 0;
 
   return (
     <div className="grid gap-4">
@@ -200,7 +207,7 @@ export function StoryEditor({
           <h3 className="text-sm font-semibold text-gray-700">Story Details</h3>
           <ExportMenu editor={editor} title={title} />
         </div>
-        
+
         <div className="grid gap-2">
           <Label htmlFor="title">Title *</Label>
           <Input
@@ -248,19 +255,23 @@ export function StoryEditor({
         <div className="grid gap-2">
           <Label htmlFor="author_select">Author</Label>
           {loadingAuthors ? (
-            <div className="text-sm text-muted-foreground">Loading authors...</div>
+            <div className="text-sm text-muted-foreground">
+              Loading authors...
+            </div>
           ) : (
             <Select
               value={authorId?.toString() || ""}
               onValueChange={(value) => {
                 if (value === "none") {
-                  setAuthorId(null)
-                  setAuthor("")
+                  setAuthorId(null);
+                  setAuthor("");
                 } else {
-                  const selectedAuthor = authors.find(a => a.id.toString() === value)
-                  setAuthorId(Number(value))
+                  const selectedAuthor = authors.find(
+                    (a) => a.id.toString() === value
+                  );
+                  setAuthorId(Number(value));
                   if (selectedAuthor) {
-                    setAuthor(selectedAuthor.name)
+                    setAuthor(selectedAuthor.name);
                   }
                 }
               }}
@@ -319,9 +330,11 @@ export function StoryEditor({
       <div className="glass rounded-lg p-4 space-y-4 bg-blue-50/50">
         <div className="flex items-center gap-2">
           <LucideIcons.Search className="h-4 w-4 text-blue-600" />
-          <h3 className="text-sm font-semibold text-gray-700">SEO & Social Sharing</h3>
+          <h3 className="text-sm font-semibold text-gray-700">
+            SEO & Social Sharing
+          </h3>
         </div>
-        
+
         <div className="grid gap-2">
           <Label htmlFor="meta_description">
             Meta Description *
@@ -332,7 +345,11 @@ export function StoryEditor({
           <Textarea
             id="meta_description"
             value={metaDescription}
-            onChange={(e) => setMetaDescription(e.target.value.slice(0, metaDescriptionMaxLength))}
+            onChange={(e) =>
+              setMetaDescription(
+                e.target.value.slice(0, metaDescriptionMaxLength)
+              )
+            }
             placeholder="A brief, compelling summary of your story (150-160 characters recommended)"
             rows={3}
             maxLength={metaDescriptionMaxLength}
@@ -362,8 +379,10 @@ export function StoryEditor({
 
       {/* CTA Section */}
       <div className="glass rounded-lg p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700">Call to Action (CTA)</h3>
-        
+        <h3 className="text-sm font-semibold text-gray-700">
+          Call to Action (CTA)
+        </h3>
+
         <div className="grid gap-2">
           <Label htmlFor="cta_text">CTA Text</Label>
           <Input
@@ -453,8 +472,8 @@ export function StoryEditor({
             size="icon"
             variant="ghost"
             onClick={() => {
-              const url = window.prompt("Enter URL")
-              if (url) editor.chain().focus().setLink({ href: url }).run()
+              const url = window.prompt("Enter URL");
+              if (url) editor.chain().focus().setLink({ href: url }).run();
             }}
             className={editor.isActive("link") ? "bg-gray-200" : ""}
           >
@@ -463,5 +482,5 @@ export function StoryEditor({
         </BubbleMenu>
       )}
     </div>
-  )
+  );
 }

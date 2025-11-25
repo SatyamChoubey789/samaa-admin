@@ -28,9 +28,6 @@ export interface Author {
   story_count?: number
 }
 
-
-
-
 export default function AuthorFormPage({
   params,
 }: {
@@ -42,42 +39,47 @@ export default function AuthorFormPage({
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [author, setAuthor] = useState<Author>({
-  slug: "",
-  name: "",
-  title: "",
-  company: "",
-  bio: "",
-  profile_image_url: "",
-  email: "",
-  linkedin_url: "",
-  twitter_url: "",
-  website_url: "",
-  expertise: [],
-})
-
+    slug: "",
+    name: "",
+    title: "",
+    company: "",
+    bio: "",
+    profile_image_url: "",
+    email: "",
+    linkedin_url: "",
+    twitter_url: "",
+    website_url: "",
+    expertise: [],
+  })
 
   const isNew = id === "new"
 
   useEffect(() => {
     if (!isNew) {
-      fetchAuthors()
+      fetchAuthor()
     }
   }, [id])
 
-  const fetchAuthors = async () => {
+  const fetchAuthor = async () => {
     try {
-      setLoading(true);
-      const response = (await api.get(`/api/v1/authors/${id}`)) as { data: { data: Author[] } };
-      const authorData = response.data.data?.[0];
-      if (authorData) {
-        setAuthor(authorData);
+      setLoading(true)
+      // FIXED: API returns { success: true, data: {...} } not { data: { data: [...] } }
+      const response = await api.get(`/api/v1/authors/${id}`) as { 
+        success: boolean
+        data: Author 
+      }
+      
+      if (response.success && response.data) {
+        setAuthor(response.data)
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to fetch author",
+        description: error.message || "Failed to fetch author",
         variant: "destructive",
       })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -97,6 +99,16 @@ export default function AuthorFormPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!author.name.trim() || !author.slug.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Name and slug are required",
+        variant: "destructive",
+      })
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -114,6 +126,7 @@ export default function AuthorFormPage({
       }
 
       router.push("/admin/authors")
+      router.refresh()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -165,6 +178,7 @@ export default function AuthorFormPage({
               value={author.slug}
               onChange={(e) => setAuthor({ ...author, slug: e.target.value })}
               required
+              placeholder="lowercase-with-dashes"
             />
           </div>
         </div>
@@ -197,6 +211,7 @@ export default function AuthorFormPage({
             value={author.bio ?? ""}
             onChange={(e) => setAuthor({ ...author, bio: e.target.value })}
             rows={4}
+            placeholder="Write a brief bio about the author..."
           />
         </div>
 
@@ -220,6 +235,7 @@ export default function AuthorFormPage({
               onChange={(e) =>
                 setAuthor({ ...author, profile_image_url: e.target.value })
               }
+              placeholder="https://..."
             />
           </div>
         </div>
@@ -233,6 +249,7 @@ export default function AuthorFormPage({
               onChange={(e) =>
                 setAuthor({ ...author, linkedin_url: e.target.value })
               }
+              placeholder="https://linkedin.com/in/..."
             />
           </div>
 
@@ -244,6 +261,7 @@ export default function AuthorFormPage({
               onChange={(e) =>
                 setAuthor({ ...author, twitter_url: e.target.value })
               }
+              placeholder="https://twitter.com/..."
             />
           </div>
 
@@ -255,6 +273,7 @@ export default function AuthorFormPage({
               onChange={(e) =>
                 setAuthor({ ...author, website_url: e.target.value })
               }
+              placeholder="https://..."
             />
           </div>
         </div>
@@ -262,29 +281,33 @@ export default function AuthorFormPage({
         {/* Expertise */}
         <div className="space-y-2">
           <Label>Expertise</Label>
-          {author.expertise.map((exp, index) => (
-            <div key={index} className="flex gap-2">
-              <Input
-                value={exp}
-                onChange={(e) => {
-                  const newExpertise = [...author.expertise]
-                  newExpertise[index] = e.target.value
-                  setAuthor({ ...author, expertise: newExpertise })
-                }}
-                placeholder="e.g., SEO, Content Marketing"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  const newExpertise = author.expertise.filter((_, i) => i !== index)
-                  setAuthor({ ...author, expertise: newExpertise })
-                }}
-              >
-                Remove
-              </Button>
-            </div>
-          ))}
+          {author.expertise.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No expertise added yet</p>
+          ) : (
+            author.expertise.map((exp, index) => (
+              <div key={index} className="flex gap-2">
+                <Input
+                  value={exp}
+                  onChange={(e) => {
+                    const newExpertise = [...author.expertise]
+                    newExpertise[index] = e.target.value
+                    setAuthor({ ...author, expertise: newExpertise })
+                  }}
+                  placeholder="e.g., SEO, Content Marketing"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newExpertise = author.expertise.filter((_, i) => i !== index)
+                    setAuthor({ ...author, expertise: newExpertise })
+                  }}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))
+          )}
           <Button
             type="button"
             variant="secondary"

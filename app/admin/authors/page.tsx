@@ -55,8 +55,12 @@ export default function AuthorsPage() {
   const fetchAuthors = async () => {
     try {
       setLoading(true)
-      const response = await api.get("/api/v1/authors") as { data: { data: Author[] } }
-      setAuthors(response.data.data || [])
+      // FIXED: API returns { success: true, data: [...] }
+      const response = await api.get("/api/v1/authors") as { 
+        success: boolean
+        data: Author[]
+      }
+      setAuthors(response.data || [])
     } catch (error: any) {
       toast({
         title: "Error",
@@ -91,7 +95,8 @@ export default function AuthorsPage() {
 
   const filteredAuthors = authors.filter((author) =>
     author.name.toLowerCase().includes(search.toLowerCase()) ||
-    author.email?.toLowerCase().includes(search.toLowerCase())
+    author.email?.toLowerCase().includes(search.toLowerCase()) ||
+    author.company?.toLowerCase().includes(search.toLowerCase())
   )
 
   if (loading) {
@@ -149,7 +154,7 @@ export default function AuthorsPage() {
             {filteredAuthors.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No authors found
+                  {search ? "No authors found matching your search" : "No authors found"}
                 </TableCell>
               </TableRow>
             ) : (
@@ -162,6 +167,7 @@ export default function AuthorsPage() {
                         href={`/authors/${author.slug}`}
                         target="_blank"
                         className="text-muted-foreground hover:text-foreground"
+                        title="View author page"
                       >
                         <ExternalLink className="h-3 w-3" />
                       </Link>
@@ -185,6 +191,7 @@ export default function AuthorsPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => router.push(`/admin/authors/${author.id}`)}
+                        title="Edit author"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -192,6 +199,7 @@ export default function AuthorsPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => setDeleteId(author.id)}
+                        title="Delete author"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -211,11 +219,14 @@ export default function AuthorsPage() {
             <AlertDialogTitle>Delete Author?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete this author. Stories linked to this author will remain but show no author.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
