@@ -46,13 +46,6 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
     }
   }
 
-  const addYouTubeVideo = () => {
-    const url = window.prompt("Enter YouTube URL")
-    if (url) {
-      editor.chain().focus().setYoutubeVideo({ src: url }).run()
-    }
-  }
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -314,15 +307,6 @@ export function EditorToolbar({ editor }: EditorToolbarProps) {
           className="hidden"
           onChange={handleImageUpload}
         />
-
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={addYouTubeVideo}
-          title="Embed YouTube"
-        >
-          <LucideIcons.Youtube className="h-4 w-4" />
-        </Button>
       </div>
 
       <Separator orientation="vertical" className="h-8" />

@@ -19,7 +19,6 @@ import TableHeader from "@tiptap/extension-table-header"
 import { Color } from "@tiptap/extension-color"
 import {TextStyle} from "@tiptap/extension-text-style"
 import Highlight from "@tiptap/extension-highlight"
-import { Youtube } from "@tiptap/extension-youtube"
 import { createLowlight, common } from "lowlight"
 
 const lowlight = createLowlight(common)
@@ -95,13 +94,6 @@ export const getEditorExtensions = () => [
   Color,
   Highlight.configure({
     multicolor: true,
-  }),
-  Youtube.configure({
-    width: 640,
-    height: 480,
-    HTMLAttributes: {
-      class: "mx-auto my-4 rounded-lg",
-    },
   }),
   Placeholder.configure({
     placeholder: "Start writing your story…",
