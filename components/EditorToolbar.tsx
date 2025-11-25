@@ -4,13 +4,6 @@ import { Button } from "@/components/ui/button"
 import * as LucideIcons from "lucide-react"
 import { Editor } from "@tiptap/react"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
