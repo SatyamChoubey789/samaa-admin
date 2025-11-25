@@ -24,7 +24,6 @@ import {
   Users,
   BookOpen,
   Mail,
-  Settings,
   Briefcase,
 } from "lucide-react";
 
@@ -34,7 +33,7 @@ const NAV_ITEMS = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/users", label: "Users", icon: Users, adminOnly: true },
   { href: "/admin/stories", label: "Stories", icon: BookOpen },
-  { href: "/admin/authors", label: "Authors", icon: User }, // ADD THIS LINE
+  { href: "/admin/authors", label: "Authors", icon: User },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
   { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
 ];
