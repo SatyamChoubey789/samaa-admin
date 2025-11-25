@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,6 +15,19 @@ import * as LucideIcons from "lucide-react"
 import { getEditorExtensions } from "@/lib/editor-extensions"
 import { EditorToolbar } from "@/components/EditorToolbar"
 import { ExportMenu } from "@/components/ExportMenu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+interface Author {
+  id: number
+  name: string
+  slug: string
+}
 
 export function StoryEditor({
   storyId,
@@ -32,13 +45,39 @@ export function StoryEditor({
   const [slug, setSlug] = useState(initial?.slug || "")
   const [subtitle, setSubtitle] = useState(initial?.subtitle || "")
   const [imageUrl, setImageUrl] = useState(initial?.image_url || "")
-  const [author, setAuthor] = useState(initial?.author || "")
+  const [authorId, setAuthorId] = useState<number | null>(initial?.author_id || null)
+  const [author, setAuthor] = useState(initial?.author || "") // Keep for backward compatibility
   const [published, setPublished] = useState(initial?.published || false)
   const [ctaText, setCtaText] = useState(initial?.cta_text || "It's your turn to twist it →")
   const [ctaLink, setCtaLink] = useState(initial?.cta_link || "https://substack.com/@samaacircle")
   const [metaDescription, setMetaDescription] = useState(initial?.excerpt || initial?.meta_description || "")
   
+  // Authors list
+  const [authors, setAuthors] = useState<Author[]>([])
+  const [loadingAuthors, setLoadingAuthors] = useState(true)
+  
   const metaDescriptionMaxLength = 160
+
+  // Fetch authors
+  useEffect(() => {
+    fetchAuthors()
+  }, [])
+
+  const fetchAuthors = async () => {
+    try {
+      const response = await api.get("/api/v1/authors") as any
+      setAuthors(response.data.data || [])
+    } catch (error) {
+      console.error("Error fetching authors:", error)
+      toast({
+        title: "Warning",
+        description: "Could not load authors list",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingAuthors(false)
+    }
+  }
 
   const getInitialContent = () => {
     if (!initial?.content) return "<p>Start writing your story...</p>"
@@ -109,7 +148,8 @@ export function StoryEditor({
         slug: slug.trim(),
         subtitle: subtitle.trim() || null,
         content: editor?.getJSON() || {},
-        author: author.trim() || null,
+        author_id: authorId, // NEW: Send author_id
+        author: author.trim() || null, // Keep for backward compatibility
         image_url: imageUrl.trim() || null,
         cta_text: ctaText.trim() || null,
         cta_link: ctaLink.trim() || null,
@@ -149,7 +189,6 @@ export function StoryEditor({
 
   if (!editor) return null
 
-  // Word count
   const wordCount = editor.storage.characterCount?.words?.() || 0
   const charCount = editor.storage.characterCount?.characters?.() || 0
 
@@ -205,13 +244,64 @@ export function StoryEditor({
           />
         </div>
 
+        {/* AUTHOR SELECTION - NEW */}
         <div className="grid gap-2">
-          <Label htmlFor="author">Author</Label>
+          <Label htmlFor="author_select">Author</Label>
+          {loadingAuthors ? (
+            <div className="text-sm text-muted-foreground">Loading authors...</div>
+          ) : (
+            <Select
+              value={authorId?.toString() || ""}
+              onValueChange={(value) => {
+                if (value === "none") {
+                  setAuthorId(null)
+                  setAuthor("")
+                } else {
+                  const selectedAuthor = authors.find(a => a.id.toString() === value)
+                  setAuthorId(Number(value))
+                  if (selectedAuthor) {
+                    setAuthor(selectedAuthor.name)
+                  }
+                }
+              }}
+            >
+              <SelectTrigger id="author_select">
+                <SelectValue placeholder="Select an author" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No author</SelectItem>
+                {authors.map((a) => (
+                  <SelectItem key={a.id} value={a.id.toString()}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <p className="text-xs text-gray-500">
+            Select from existing authors or{" "}
+            <a
+              href="/admin/authors/new"
+              target="_blank"
+              className="text-blue-600 hover:underline"
+            >
+              create a new one
+            </a>
+          </p>
+        </div>
+
+        {/* Fallback: Manual Author Name (for backward compatibility) */}
+        <div className="grid gap-2">
+          <Label htmlFor="author_manual">
+            Or enter author name manually
+            <span className="text-xs text-muted-foreground ml-2">(legacy)</span>
+          </Label>
           <Input
-            id="author"
+            id="author_manual"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
             placeholder="Author name"
+            disabled={!!authorId}
           />
         </div>
 
