@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,23 +11,10 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/lib/auth-provider"
 import { EditorContent, useEditor } from "@tiptap/react"
 import { BubbleMenu } from "@tiptap/react/menus"
-import StarterKit from "@tiptap/starter-kit"
-import Underline from "@tiptap/extension-underline"
-import Link from "@tiptap/extension-link"
-import Image from "@tiptap/extension-image"
-import Heading from "@tiptap/extension-heading"
-import TextAlign from "@tiptap/extension-text-align"
-import BulletList from "@tiptap/extension-bullet-list"
-import OrderedList from "@tiptap/extension-ordered-list"
-import Blockquote from "@tiptap/extension-blockquote"
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
-import Placeholder from "@tiptap/extension-placeholder"
-import { Table } from "@tiptap/extension-table"
-import TableRow from "@tiptap/extension-table-row"
-import TableCell from "@tiptap/extension-table-cell"
-import TableHeader from "@tiptap/extension-table-header"
-import { createLowlight, common } from "lowlight"
 import * as LucideIcons from "lucide-react"
+import { getEditorExtensions } from "@/lib/editor-extensions"
+import { EditorToolbar } from "@/components/EditorToolbar"
+import { ExportMenu } from "@/components/ExportMenu"
 
 export function StoryEditor({
   storyId,
@@ -39,6 +26,7 @@ export function StoryEditor({
   const { toast } = useToast()
   const { api } = useAuth()
   const router = useRouter()
+  
   const [saving, setSaving] = useState(false)
   const [title, setTitle] = useState(initial?.title || "")
   const [slug, setSlug] = useState(initial?.slug || "")
@@ -48,13 +36,9 @@ export function StoryEditor({
   const [published, setPublished] = useState(initial?.published || false)
   const [ctaText, setCtaText] = useState(initial?.cta_text || "It's your turn to twist it →")
   const [ctaLink, setCtaLink] = useState(initial?.cta_link || "https://substack.com/@samaacircle")
-  
-  // New: Meta Description (SEO)
   const [metaDescription, setMetaDescription] = useState(initial?.excerpt || initial?.meta_description || "")
+  
   const metaDescriptionMaxLength = 160
-
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-  const lowlight = createLowlight(common)
 
   const getInitialContent = () => {
     if (!initial?.content) return "<p>Start writing your story...</p>"
@@ -72,41 +56,16 @@ export function StoryEditor({
   }
 
   const editor = useEditor({
-    extensions: [
-      StarterKit.configure({
-        bulletList: false,
-        orderedList: false,
-      }),
-      Underline,
-      Link.configure({ openOnClick: true }),
-      Image.configure({ inline: false }),
-      Heading.configure({ levels: [1, 2, 3] }),
-      TextAlign.configure({ types: ["heading", "paragraph"] }),
-      BulletList,
-      OrderedList,
-      Blockquote,
-      CodeBlockLowlight.configure({ lowlight }),
-      Table,
-      TableRow,
-      TableCell,
-      TableHeader,
-      Placeholder.configure({ placeholder: "Start writing your story…" }),
-    ],
+    extensions: getEditorExtensions(),
     content: getInitialContent(),
     immediatelyRender: false,
     autofocus: true,
     editorProps: {
       attributes: {
-        class: "prose max-w-none prose-gray dark:prose-invert focus:outline-none min-h-[400px]",
+        class: "prose prose-lg max-w-none prose-gray dark:prose-invert focus:outline-none min-h-[500px] px-4 py-2",
       },
     },
   })
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [])
 
   const generateSlug = (text: string) => {
     return text
@@ -154,7 +113,7 @@ export function StoryEditor({
         image_url: imageUrl.trim() || null,
         cta_text: ctaText.trim() || null,
         cta_link: ctaLink.trim() || null,
-        excerpt: metaDescription.trim() || null, // Using excerpt column for meta description
+        excerpt: metaDescription.trim() || null,
         published,
       }
 
@@ -190,25 +149,18 @@ export function StoryEditor({
 
   if (!editor) return null
 
-  const setLink = () => {
-    const url = window.prompt("Enter URL")
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run()
-    }
-  }
-
-  const addImage = () => {
-    const url = window.prompt("Enter image URL")
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
-    }
-  }
+  // Word count
+  const wordCount = editor.storage.characterCount?.words?.() || 0
+  const charCount = editor.storage.characterCount?.characters?.() || 0
 
   return (
     <div className="grid gap-4">
       {/* Metadata Section */}
       <div className="glass rounded-lg p-4 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700">Story Details</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-gray-700">Story Details</h3>
+          <ExportMenu editor={editor} title={title} />
+        </div>
         
         <div className="grid gap-2">
           <Label htmlFor="title">Title *</Label>
@@ -273,7 +225,7 @@ export function StoryEditor({
         </div>
       </div>
 
-      {/* SEO Section - NEW */}
+      {/* SEO Section */}
       <div className="glass rounded-lg p-4 space-y-4 bg-blue-50/50">
         <div className="flex items-center gap-2">
           <LucideIcons.Search className="h-4 w-4 text-blue-600" />
@@ -296,11 +248,10 @@ export function StoryEditor({
             maxLength={metaDescriptionMaxLength}
           />
           <p className="text-xs text-gray-500">
-            This appears in search results and when shared on social media. Keep it engaging and under 160 characters.
+            This appears in search results and when shared on social media.
           </p>
         </div>
 
-        {/* Preview */}
         {metaDescription && (
           <div className="mt-3 pt-3 border-t border-blue-200">
             <p className="text-xs text-gray-500 mb-2">Search Result Preview:</p>
@@ -363,129 +314,32 @@ export function StoryEditor({
       {/* Save Button */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          Click save to store your changes
+          {wordCount} words · {charCount} characters
         </div>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving…" : "Save Story"}
         </Button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap gap-1 rounded-lg border bg-background/50 p-2 shadow-sm">
-        <Button
-          size="icon"
-          variant={editor.isActive("bold") ? "default" : "ghost"}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          <LucideIcons.Bold className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant={editor.isActive("italic") ? "default" : "ghost"}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          <LucideIcons.Italic className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant={editor.isActive("underline") ? "default" : "ghost"}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        >
-          <LucideIcons.Underline className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        >
-          <LucideIcons.Heading1 className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        >
-          <LucideIcons.Heading2 className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        >
-          <LucideIcons.Heading3 className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-        >
-          <LucideIcons.List className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        >
-          <LucideIcons.ListOrdered className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        >
-          <LucideIcons.Quote className="h-4 w-4" />
-        </Button>
-        <Button size="icon" variant="ghost" onClick={setLink}>
-          <LucideIcons.Link2 className="h-4 w-4" />
-        </Button>
-        <Button size="icon" variant="ghost" onClick={addImage}>
-          <LucideIcons.Image className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3 }).run()}
-        >
-          <LucideIcons.Table className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-        >
-          <LucideIcons.Code className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().undo().run()}
-        >
-          <LucideIcons.Undo className="h-4 w-4" />
-        </Button>
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => editor.chain().focus().redo().run()}
-        >
-          <LucideIcons.Redo className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Editor Toolbar */}
+      <EditorToolbar editor={editor} />
 
-      {/* Editor */}
-      <div className="glass rounded-lg p-4 min-h-[400px] prose prose-slate dark:prose-invert max-w-none">
+      {/* Editor Content */}
+      <div className="glass rounded-lg min-h-[500px]">
         <EditorContent editor={editor} />
       </div>
 
-      {/* Bubble menu */}
+      {/* Bubble Menu for quick formatting */}
       {editor && (
         <BubbleMenu
           editor={editor}
-          className="flex gap-1 rounded-md border bg-background/80 backdrop-blur p-1 shadow-sm"
+          className="flex gap-1 rounded-md border bg-background/95 backdrop-blur p-1 shadow-lg"
         >
           <Button
             size="icon"
             variant="ghost"
             onClick={() => editor.chain().focus().toggleBold().run()}
+            className={editor.isActive("bold") ? "bg-gray-200" : ""}
           >
             <LucideIcons.Bold className="h-4 w-4" />
           </Button>
@@ -493,6 +347,7 @@ export function StoryEditor({
             size="icon"
             variant="ghost"
             onClick={() => editor.chain().focus().toggleItalic().run()}
+            className={editor.isActive("italic") ? "bg-gray-200" : ""}
           >
             <LucideIcons.Italic className="h-4 w-4" />
           </Button>
@@ -500,8 +355,20 @@ export function StoryEditor({
             size="icon"
             variant="ghost"
             onClick={() => editor.chain().focus().toggleUnderline().run()}
+            className={editor.isActive("underline") ? "bg-gray-200" : ""}
           >
             <LucideIcons.Underline className="h-4 w-4" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={() => {
+              const url = window.prompt("Enter URL")
+              if (url) editor.chain().focus().setLink({ href: url }).run()
+            }}
+            className={editor.isActive("link") ? "bg-gray-200" : ""}
+          >
+            <LucideIcons.Link2 className="h-4 w-4" />
           </Button>
         </BubbleMenu>
       )}
