@@ -10,20 +10,26 @@ import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft } from "lucide-react"
 
-interface Author {
+export interface Author {
   id?: number
   slug: string
   name: string
-  title?: string
-  company?: string
-  bio?: string
-  profile_image_url?: string
-  email?: string
-  linkedin_url?: string
-  twitter_url?: string
-  website_url?: string
+  title?: string | null
+  company?: string | null
+  bio?: string | null
+  profile_image_url?: string | null
+  email?: string | null
+  linkedin_url?: string | null
+  twitter_url?: string | null
+  website_url?: string | null
   expertise: string[]
+  created_at?: string
+  updated_at?: string
+  story_count?: number
 }
+
+
+
 
 export default function AuthorFormPage({
   params,
@@ -36,18 +42,19 @@ export default function AuthorFormPage({
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [author, setAuthor] = useState<Author>({
-    slug: "",
-    name: "",
-    title: "",
-    company: "",
-    bio: "",
-    profile_image_url: "",
-    email: "",
-    linkedin_url: "",
-    twitter_url: "",
-    website_url: "",
-    expertise: [""],
-  })
+  slug: "",
+  name: "",
+  title: "",
+  company: "",
+  bio: "",
+  profile_image_url: "",
+  email: "",
+  linkedin_url: "",
+  twitter_url: "",
+  website_url: "",
+  expertise: [],
+})
+
 
   const isNew = id === "new"
 
@@ -163,7 +170,7 @@ export default function AuthorFormPage({
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
-              value={author.title}
+              value={author.title ?? ""}
               onChange={(e) => setAuthor({ ...author, title: e.target.value })}
               placeholder="e.g., Principal Consultant"
             />
@@ -173,7 +180,7 @@ export default function AuthorFormPage({
             <Label htmlFor="company">Company</Label>
             <Input
               id="company"
-              value={author.company}
+              value={author.company ?? ""}
               onChange={(e) => setAuthor({ ...author, company: e.target.value })}
             />
           </div>
@@ -183,7 +190,7 @@ export default function AuthorFormPage({
           <Label htmlFor="bio">Bio</Label>
           <Textarea
             id="bio"
-            value={author.bio}
+            value={author.bio ?? ""}
             onChange={(e) => setAuthor({ ...author, bio: e.target.value })}
             rows={4}
           />
@@ -196,7 +203,7 @@ export default function AuthorFormPage({
             <Input
               id="email"
               type="email"
-              value={author.email}
+              value={author.email ?? ""}
               onChange={(e) => setAuthor({ ...author, email: e.target.value })}
             />
           </div>
@@ -205,7 +212,7 @@ export default function AuthorFormPage({
             <Label htmlFor="profile_image_url">Profile Image URL</Label>
             <Input
               id="profile_image_url"
-              value={author.profile_image_url}
+              value={author.profile_image_url ?? ""}
               onChange={(e) =>
                 setAuthor({ ...author, profile_image_url: e.target.value })
               }
@@ -218,7 +225,7 @@ export default function AuthorFormPage({
             <Label htmlFor="linkedin_url">LinkedIn URL</Label>
             <Input
               id="linkedin_url"
-              value={author.linkedin_url}
+              value={author.linkedin_url ?? ""}
               onChange={(e) =>
                 setAuthor({ ...author, linkedin_url: e.target.value })
               }
@@ -229,7 +236,7 @@ export default function AuthorFormPage({
             <Label htmlFor="twitter_url">Twitter URL</Label>
             <Input
               id="twitter_url"
-              value={author.twitter_url}
+              value={author.twitter_url ?? ""}
               onChange={(e) =>
                 setAuthor({ ...author, twitter_url: e.target.value })
               }
@@ -240,7 +247,7 @@ export default function AuthorFormPage({
             <Label htmlFor="website_url">Website URL</Label>
             <Input
               id="website_url"
-              value={author.website_url}
+              value={author.website_url ?? ""}
               onChange={(e) =>
                 setAuthor({ ...author, website_url: e.target.value })
               }

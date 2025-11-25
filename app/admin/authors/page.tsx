@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-provider"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-provider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -12,11 +12,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/hooks/use-toast"
-import { Plus, Pencil, Trash2, Search, ExternalLink } from "lucide-react"
-import Link from "next/link"
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Pencil, Trash2, Search, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +26,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 interface Author {
   id: number
@@ -37,69 +37,83 @@ interface Author {
   email?: string
   story_count: number
   created_at: string
+  updated_at?: string
+  bio?: string
+  profile_image_url?: string
+  linkedin_url?: string
+  twitter_url?: string
+  website_url?: string
+  expertise?: string[]
 }
 
+
 export default function AuthorsPage() {
-  const { api } = useAuth()
-  const router = useRouter()
-  const { toast } = useToast()
-  const [authors, setAuthors] = useState<Author[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
-  const [deleteId, setDeleteId] = useState<number | null>(null)
+  const { api } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [authors, setAuthors] = useState<Author[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetchAuthors()
-  }, [])
+    fetchAuthors();
+  }, []);
 
   const fetchAuthors = async () => {
     try {
-      setLoading(true)
-      const response = await api.get("/api/v1/authors") as { data: { data: Author[] } }
-      setAuthors(response.data.data || [])
+      setLoading(true);
+      const response = (await api.get(
+        "https://api.samaabysiblings.com/backend/api/v1/authors"
+      )) as { data: { data: Author[] } };
+      setAuthors(response.data.data || []);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to fetch authors",
         variant: "destructive",
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async () => {
-    if (!deleteId) return
+    if (!deleteId) return;
 
     try {
-      await api.delete(`/api/v1/authors/${deleteId}`)
+      await api.delete(
+        `https://api.samaabysiblings.com/backend/api/v1/authors/${deleteId}`
+      );
+
       toast({
         title: "Success",
         description: "Author deleted successfully",
-      })
-      fetchAuthors()
+      });
+      fetchAuthors();
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to delete author",
         variant: "destructive",
-      })
+      });
     } finally {
-      setDeleteId(null)
+      setDeleteId(null);
     }
-  }
+  };
 
-  const filteredAuthors = authors.filter((author) =>
-    author.name.toLowerCase().includes(search.toLowerCase()) ||
-    author.email?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredAuthors = authors.filter(
+    (author) =>
+      author.name.toLowerCase().includes(search.toLowerCase()) ||
+      author.email?.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -148,7 +162,10 @@ export default function AuthorsPage() {
           <TableBody>
             {filteredAuthors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={6}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No authors found
                 </TableCell>
               </TableRow>
@@ -184,7 +201,9 @@ export default function AuthorsPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => router.push(`/admin/authors/${author.id}`)}
+                        onClick={() =>
+                          router.push(`/admin/authors/${author.id}`)
+                        }
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -210,7 +229,8 @@ export default function AuthorsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Author?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete this author. Stories linked to this author will remain but show no author.
+              This will permanently delete this author. Stories linked to this
+              author will remain but show no author.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -220,5 +240,5 @@ export default function AuthorsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }
