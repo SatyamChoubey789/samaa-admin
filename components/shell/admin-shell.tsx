@@ -36,6 +36,12 @@ const NAV_ITEMS = [
   { href: "/admin/authors", label: "Authors", icon: User },
   { href: "/admin/subscribers", label: "Subscribers", icon: Mail },
   { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
+  {
+    href: "/admin/rotation",
+    label: "Rotation",
+    icon: Package,
+    adminOnly: true,
+  },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
