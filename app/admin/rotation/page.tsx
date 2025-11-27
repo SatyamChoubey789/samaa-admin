@@ -33,10 +33,36 @@ export default function RotationPage() {
     try {
       setLoading(true)
       const response = await api.get("/api/v1/rotation/active") as any
-      const data = response.data.data
       
-      if (data.messages && data.messages.length > 0) {
+      console.log("Full response:", response)
+      console.log("Response data:", response.data)
+      
+      // Try different paths to get the data
+      let data = null
+      
+      if (response?.data?.data) {
+        // Standard structure: { data: { data: {...} } }
+        data = response.data.data
+      } else if (response?.data) {
+        // Wrapped once: { data: {...} }
+        data = response.data
+      } else if (response) {
+        // Direct response
+        data = response
+      }
+      
+      console.log("Extracted data:", data)
+      
+      if (!data) {
+        throw new Error("No data received from server")
+      }
+      
+      // Now safely access messages
+      if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
         setMessages(data.messages)
+      } else {
+        // Keep default message if none found
+        console.log("No messages in response, keeping defaults")
       }
       
       if (data.updated_at) {
@@ -44,9 +70,10 @@ export default function RotationPage() {
       }
     } catch (error: any) {
       console.error("Error fetching messages:", error)
+      console.error("Error response:", error.response)
       toast({
         title: "Error",
-        description: "Failed to load rotating messages",
+        description: error.response?.data?.message || error.message || "Failed to load rotating messages",
         variant: "destructive",
       })
     } finally {
@@ -89,18 +116,22 @@ export default function RotationPage() {
 
     setSaving(true)
     try {
-      await api.put("/api/v1/rotation", { messages })
+      const response = await api.put("/api/v1/rotation", { messages }) as any
+      
+      console.log("Save response:", response)
       
       toast({
         title: "Success!",
         description: "Rotating messages updated successfully",
       })
       
-      fetchMessages() // Refresh to get updated timestamp
+      await fetchMessages() // Refresh to get updated timestamp
     } catch (error: any) {
+      console.error("Save error:", error)
+      console.error("Save error response:", error.response)
       toast({
         title: "Error",
-        description: error.message || "Failed to save messages",
+        description: error.response?.data?.message || error.message || "Failed to save messages",
         variant: "destructive",
       })
     } finally {
